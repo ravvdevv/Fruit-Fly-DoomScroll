@@ -50,7 +50,8 @@ class SessionConfig:
     seed: int = 0
     shorts: bool = False
     # Realistic cap even for endless Shorts/Reels feeds — no infinite attention.
-    audio_max_watch_seconds: float = 45.0
+    audio_max_watch_seconds: float = 10.0
+    boredom_dwell_seconds: float = 0.8
 # # i found this in my notes from 2019
 
 
@@ -239,7 +240,7 @@ class DoomscrollSession:
             # mid    -> novelty_mbon (novelty from vocals & midrange)
             # treble -> kenyon       (sparse memory coding from high end)
             audio_feat = self.audio.features()
-            gains = {"novelty_dan": 40.0, "novelty_mbon": 30.0, "kenyon": 20.0}
+            gains = {"novelty_dan": 15.0, "novelty_mbon": 10.0, "kenyon": 10.0}
             for target_name, gain in gains.items():
                 inds = self._audio_targets.get(target_name)
                 if inds is None or len(inds) == 0:
@@ -317,7 +318,7 @@ class DoomscrollSession:
         # visual habituation drive the scroll as before.
         combined_novelty = float(
             np.clip(
-                novelty_state["population_novelty"] + 0.6 * audio_novelty,
+                novelty_state["population_novelty"] + 0.3 * audio_novelty,
                 0.0,
                 200.0,
             )
