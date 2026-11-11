@@ -456,7 +456,7 @@ class YouTubeShortsFeed:
 
         Checks:
         1. URL patterns (YouTube ad URLs)
-        2. Visual elements (Skip Ad button, Ad label)
+        2. Visual elements (Skip Ad button, Sponsored label, Learn more button)
         3. Audio patterns (sustained loudness typical of ads)
         Returns (detected, confidence).
         """
@@ -473,7 +473,8 @@ class YouTubeShortsFeed:
         except Exception:
             pass
 
-        # Check for skip button or ad label
+        # Check for ad indicators - YouTube Shorts ads often show Sponsored labels
+        # and Learn more buttons instead of Skip Ad buttons
         try:
             ad_indicators = self._page.evaluate(
                 """() => {
@@ -482,18 +483,33 @@ class YouTubeShortsFeed:
                     '.ytp-ad-skip-button, [aria-label*="Skip ad"]'
                 );
                 const adLabel = document.querySelector(
-                    '[aria-label*="Ad"], .ytp-ad-label, [data-testid="ad-label"]'
+                    '[aria-label*="Ad"], .ytp-ad-label, [data-testid="ad-label"], ' +
+                    '[aria-label*="Sponsored"], [aria-label*="sponsored"]'
+                );
+                const learnMore = document.querySelector(
+                    'button:has-text("Learn more"), a:has-text("Learn more"), ' +
+                    '[aria-label*="Learn more"]'
+                );
+                const sponsoredText = document.querySelector(
+                    'ytd-reel-video-renderer [aria-label*="Sponsored"], ' +
+                    '[aria-label*="sponsored"], [aria-label*="Ad"]'
                 );
                 return {
                     skip: !!skipBtn,
                     label: !!adLabel,
+                    learnMore: !!learnMore,
+                    sponsored: !!sponsoredText,
                 };
             }"""
             )
             if ad_indicators:
                 if ad_indicators.get("skip"):
-                    score += 0.5
+                    score += 0.4
                 if ad_indicators.get("label"):
+                    score += 0.4
+                if ad_indicators.get("learnMore"):
+                    score += 0.3
+                if ad_indicators.get("sponsored"):
                     score += 0.3
         except Exception:
             pass
@@ -503,9 +519,9 @@ class YouTubeShortsFeed:
             recent = self._audio_history[-3:]
             avg_rms = sum(recent) / len(recent)
             if avg_rms > 0.15:  # consistently loud
-                score += 0.3
+                score += 0.2
 
-        detected = score >= 0.5
+        detected = score >= 0.4
         return detected, min(score, 1.0)
 
     def scroll(self) -> ShortsReel:
