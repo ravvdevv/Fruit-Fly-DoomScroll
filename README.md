@@ -2,6 +2,11 @@
 
 A fruit-fly-inspired **doomscroller** built on the MaleCNS controller. The fly watches short-form video through modeled photoreceptors, stays on a clip until novelty-compartment MBON activity habituates, and scrolls when interest drops — now with live audio capture, ad detection, keyboard controls, and waveform visualization.
 
+---
+If you dont still understand imagine a virtual fruit fly watching YouTube Shorts or Instagram Reels. Just like a real fruit fly, it gradually loses interest when a video becomes repetitive or boring. Once it decides that a video is no longer interesting, it automatically scrolls to the next one. P.S. I just forked the original project, made some improvements, and somehow ended up with this shit. I don't even know why. 💀
+
+
+---
 ![FlyScroll watching YouTube Shorts](docs/flyscroll-demo.gif)
 
 Based on the recent fruit fly connectome published by [Google](https://blog.google/innovation-and-ai/technology/research/male-fruit-fly-brain-map/).
