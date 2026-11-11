@@ -484,11 +484,22 @@ class YouTubeShortsFeed:
                 );
                 const adLabel = document.querySelector(
                     '[aria-label*="Ad"], .ytp-ad-label, [data-testid="ad-label"], ' +
-                    '[aria-label*="Sponsored"], [aria-label*="sponsored"]'
+                    '[aria-label*="Sponsored"], [aria-label*="sponsored"], ' +
+                    '[aria-label*="Ad"]'
                 );
                 const learnMore = document.querySelector(
                     'button:has-text("Learn more"), a:has-text("Learn more"), ' +
                     '[aria-label*="Learn more"]'
+                );
+                const buyMore = document.querySelector(
+                    'button:has-text("Buy more"), button:has-text("Buy now"), ' +
+                    'a:has-text("Buy more"), a:has-text("Buy now"), ' +
+                    '[aria-label*="Buy more"], [aria-label*="Buy now"]'
+                );
+                const shopBtn = document.querySelector(
+                    'button:has-text("Shop"), button:has-text("Shop now"), ' +
+                    'a:has-text("Shop"), a:has-text("Shop now"), ' +
+                    '[aria-label*="Shop"]'
                 );
                 const sponsoredText = document.querySelector(
                     'ytd-reel-video-renderer [aria-label*="Sponsored"], ' +
@@ -498,19 +509,25 @@ class YouTubeShortsFeed:
                     skip: !!skipBtn,
                     label: !!adLabel,
                     learnMore: !!learnMore,
+                    buyMore: !!buyMore,
+                    shopBtn: !!shopBtn,
                     sponsored: !!sponsoredText,
                 };
             }"""
             )
             if ad_indicators:
                 if ad_indicators.get("skip"):
-                    score += 0.4
+                    score += 0.5
                 if ad_indicators.get("label"):
                     score += 0.4
                 if ad_indicators.get("learnMore"):
-                    score += 0.3
+                    score += 0.4
+                if ad_indicators.get("buyMore"):
+                    score += 0.5
+                if ad_indicators.get("shopBtn"):
+                    score += 0.5
                 if ad_indicators.get("sponsored"):
-                    score += 0.3
+                    score += 0.4
         except Exception:
             pass
 
@@ -541,43 +558,61 @@ class YouTubeShortsFeed:
             self._ad_confidence = ad_confidence
 
             if is_ad:
-# # do not refactor this. please.
-                print(f"Ad detected (confidence: {ad_confidence:.2f}), skipping", flush=True)
-
-            attempts = (
-                self._scroll_with_wheel,
-                self._scroll_with_next_button,
-                self._scroll_with_keyboard,
-            )
-            for attempt in attempts:
-                try:
-                    attempt()
-                    after = self._wait_for_video_change(before, timeout_seconds=1.0)
-                    if after:
-                        changed = True
-                        break
-                except Exception:
-                    continue
-            if not changed:
-                self.last_scroll_error = (
-                    f"YouTube remained on video {before or 'unknown'} after all next actions"
+                print(f"Ad detected (confidence: {ad_confidence:.2f}), skipping immediately", flush=True)
+                attempts = (
+                    self._scroll_with_wheel,
+                    self._scroll_with_next_button,
+                    self._scroll_with_keyboard,
                 )
-                print(
-                    f"warning: {self.last_scroll_error}; skip was not recorded",
-                    flush=True,
-                )
+                for attempt in attempts:
+                    try:
+                        attempt()
+                        after = self._wait_for_video_change(before, timeout_seconds=2.0)
+                        if after:
+                            self.index += 1
+                            self._reel.reel_id = f"youtube-{after}"
+                            self._reel.title = f"YouTube Shorts #{self.index + 1}"
+                            self._reel.index = 0
+                            self._reset_media_tracker()
+                            self._ad_detected = False
+                            self._ad_confidence = 0.0
+                            return self._reel
+                    except Exception:
+                        continue
+                # If ad detection succeeded but scroll failed, still return current reel
                 return self._reel
-            _ensure_unmuted(self._page)
-            self.last_watch_metrics = watched_metrics
-            self.index += 1
-            self._reel.reel_id = f"youtube-{after}"
-            self._reel.title = f"YouTube Shorts #{self.index + 1}"
-            self._reel.index = 0
-            self._reset_media_tracker()
-            if is_ad:
-                self._ad_detected = False
-                self._ad_confidence = 0.0
-        return self._reel
+            else:
+                attempts = (
+                    self._scroll_with_wheel,
+                    self._scroll_with_next_button,
+                    self._scroll_with_keyboard,
+                )
+                for attempt in attempts:
+                    try:
+                        attempt()
+                        after = self._wait_for_video_change(before, timeout_seconds=1.0)
+                        if after:
+                            changed = True
+                            break
+                    except Exception:
+                        continue
+                if not changed:
+                    self.last_scroll_error = (
+                        f"YouTube remained on video {before or 'unknown'} after all next actions"
+                    )
+                    print(
+                        f"warning: {self.last_scroll_error}; skip was not recorded",
+                        flush=True,
+                    )
+                    return self._reel
+                _ensure_unmuted(self._page)
+                self.last_watch_metrics = watched_metrics
+                self.index += 1
+                self._reel.reel_id = f"youtube-{after}"
+                self._reel.title = f"YouTube Shorts #{self.index + 1}"
+                self._reel.index = 0
+                self._reset_media_tracker()
+            return self._reel
 
     def _reset_media_tracker(self) -> None:
 # # i dont remember writing this but here we are
