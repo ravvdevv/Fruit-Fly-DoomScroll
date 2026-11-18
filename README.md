@@ -1,136 +1,170 @@
 # FlyScroll
 
-A fruit-fly-inspired **doomscroller** built on the MaleCNS controller. The fly watches short-form video through modeled photoreceptors, stays on a clip until novelty-compartment MBON activity habituates, and scrolls when interest drops — now with live audio capture, ad detection, keyboard controls, and waveform visualization.
+A fruit-fly-inspired **doomscroller** powered by the MaleCNS connectome.
 
----
-If you dont still understand imagine a virtual fruit fly watching YouTube Shorts or Instagram Reels. Just like a real fruit fly, it gradually loses interest when a video becomes repetitive or boring. Once it decides that a video is no longer interesting, it automatically scrolls to the next one. P.S. I just forked the original project, made some improvements, and somehow ended up with this shit. I don't even know why. 💀
+FlyScroll models how a fruit fly's visual and auditory systems respond to changing stimuli. It watches short-form video, tracks novelty and habituation, and decides when to move on to the next clip. The project combines a research-derived neural circuit model with a practical video-watching environment.
 
-
----
 ![FlyScroll watching YouTube Shorts](docs/flyscroll-demo.gif)
 
-Based on the recent fruit fly connectome published by [Google](https://blog.google/innovation-and-ai/technology/research/male-fruit-fly-brain-map/).
+> **In plain English:** Imagine a virtual fruit fly watching YouTube Shorts or Instagram Reels. When a clip stops being interesting, its modeled neural activity changes and FlyScroll can scroll to the next one. It is an experimental connectome-inspired system, not a claim that a biological fly literally understands videos.
+
+FlyScroll is based on the [MaleCNS fruit fly connectome](https://blog.google/innovation-and-ai/technology/research/male-fruit-fly-brain-map/) and builds on the work of [ranagwho/Fruitfly-Doomscroller](https://github.com/ranagwho/Fruitfly-Doomscroller), with additional work on audio input, frequency-band analysis, ad detection, controls, and dashboard visualization.
 
 ---
 
 ## What it does
 
-1. **Captures video** — frames sampled into ommatidial columns, fed into modeled R1–R8 photoreceptors (luminance + chromatic)
-2. **Simulates** — compiled numba LIF spiking network on the MaleCNS connectome (69k visual crop or 167k full CNS)
-3. **Computes novelty** — analog feature detectors + smoothed spike rates form a population vector; prediction error = novelty
-4. **Tracks interest** — tonic interest = EMA of novelty-MBON rate; anti-Hebbian depression on KC→novelty-MBON synapses causes habituation
-5. **Scrolls** — when interest falls below threshold after refractory period, or phasic novelty stays low too long, the fly swipes to the next clip
-6. **Hears audio** — WASAPI loopback captures system audio, split into bass/mid/treble bands driving different neural populations; only *changes* in sound drive interest (habituation)
+1. **Sees video** — samples frames into ommatidial columns and models R1–R8 photoreceptor responses, including luminance and chromatic signals.
+2. **Runs a connectome-based simulation** — executes a Numba-accelerated leaky integrate-and-fire network using either a roughly 69k-cell visual crop or the 167k-cell full CNS.
+3. **Detects novelty** — combines analog feature detectors and smoothed neural activity into a population vector; prediction error provides a novelty signal.
+4. **Models habituation** — tracks tonic interest through novelty-MBON activity and applies anti-Hebbian depression to KC→novelty-MBON synapses.
+5. **Chooses when to scroll** — advances when interest falls below its threshold after a refractory period, or when phasic novelty remains low for long enough.
+6. **Listens to audio** — captures system audio through WASAPI loopback and routes bass, mid, and treble changes into modeled neural populations. Repetitive sound gradually loses influence.
+7. **Detects ads** — combines visual indicators, URL patterns, and audio loudness heuristics to identify and skip likely advertisements.
 
 ---
 
-## Setup
+## Requirements
 
-Python **3.11+**. Several GB of RAM for the full graph.
+- Python **3.11+**
+- Several GB of RAM for the full connectome graph
+- Windows for WASAPI loopback audio capture; other platforms may require a virtual audio device or platform-specific setup
 
-```sh
+## Installation
+
+Create and activate a virtual environment:
+
+```powershell
 py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1   # PowerShell
-# or: source .venv/bin/activate  # macOS/Linux
-
+.\.venv\Scripts\Activate.ps1
 pip install -e ".[video,dev]"
 ```
 
-Connectome feathers should live in `connectome_data/malecns_v1/` (already present). Then prepare the graph:
+On macOS or Linux:
 
-```sh
-flyscroll import                              # Import + normalize MaleCNS connectome
-flyscroll prepare --scale visual              # ~70k cells, good for 16GB laptops
-flyscroll prepare --scale full                # ~167k cells, intact CNS, more RAM
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[video,dev]"
 ```
+
+Connectome feathers should be available in `connectome_data/malecns_v1/`. Prepare the graph:
+
+```bash
+flyscroll import
+flyscroll prepare --scale visual
+```
+
+For the full central nervous system graph, use:
+
+```bash
+flyscroll prepare --scale full
+```
+
+The visual scale is the recommended starting point for laptops with 16 GB of RAM.
 
 ---
 
-## Run
+## Run FlyScroll
 
-### Live YouTube Shorts (no login required)
+### YouTube Shorts
 
-Playwright opens public Shorts in headed Chromium. System audio captured via WASAPI loopback.
+FlyScroll can open public Shorts in a headed Chromium browser. On Windows, system audio can be captured through WASAPI loopback.
 
-```sh
+```bash
 pip install -e ".[shorts]"
-PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium
+playwright install chromium
 
 flyscroll serve --scale visual --port 8767 --shorts
-# open http://127.0.0.1:8767/
 ```
 
-**Windows audio:** The fly captures whatever your speakers output. If no loopback device found, install [VB-Cable](https://vb-audio.com/Cable/) and set Chromium output to "Cable Input".
+Open the local spectator at [http://127.0.0.1:8767/](http://127.0.0.1:8767/).
 
-**macOS:** Grant Screen Recording to the app running flyscroll (System Settings → Privacy & Security → Screen & System Audio Recording).
+**Windows audio:** FlyScroll captures system output. If no loopback device is detected, install [VB-CABLE](https://vb-audio.com/Cable/) and route Chromium audio to **CABLE Input**.
+
+**macOS:** Grant the terminal or application running FlyScroll permission under **System Settings → Privacy & Security → Screen & System Audio Recording**.
 
 ### Local videos
 
-Drop MP4/WebM files into a folder:
+Place MP4 or WebM files in a folder and pass it to the server:
 
-```sh
+```bash
 flyscroll serve --scale visual --reels reels --port 8767
 ```
 
 ### Headless smoke test
 
-```sh
+Run a short simulation without opening the spectator:
+
+```bash
 flyscroll demo --scale visual --steps 40
 ```
 
 ---
 
-## Keyboard controls (in browser spectator)
+## Dashboard
 
-| Key | Action |
-|-----|--------|
-| **Space** | Pause / unpause |
-| **→** | Force skip to next reel |
-| **↑** | Increase interest threshold (+1.0) |
-| **↓** | Decrease interest threshold (−1.0) |
-| **A** | Manually mark current video as an ad |
+The local spectator at `http://127.0.0.1:8767/` provides a live view of the experiment:
+
+| Panel | What it shows |
+|---|---|
+| **Reel viewport** | The current video being presented to the model |
+| **Brain visualization** | Neural activity across the MaleCNS connectome; drag to orbit and scroll to zoom |
+| **Interest and novelty** | Tonic interest, phasic novelty, and their recent trends |
+| **Sound bands** | Bass, mid, treble, and onset activity from captured audio |
+| **Audio waveform** | A live visualization of the captured system audio |
+| **Experiment charts** | Interest and novelty history, watch outcomes, and average watch time |
+| **Ad detection** | Detection status and confidence for likely advertisements |
+
+The dashboard is an experiment monitor: it exposes model signals and outcomes rather than presenting the simulation as a human-level recommendation system.
 
 ---
+
+## Keyboard controls
+
+Controls are available in the browser spectator:
+
+| Key | Action |
+|---|---|
+| **Space** | Pause or resume |
+| **→** | Force-skip to the next reel |
+| **↑** | Increase the interest threshold by 1.0 |
+| **↓** | Decrease the interest threshold by 1.0 |
+| **A** | Manually mark the current video as an ad |
 
 ## Ad detection
 
-The fly detects ads automatically and skips them:
+FlyScroll uses several heuristics to identify likely advertisements:
 
-- **Visual:** Looks for "Skip Ad" buttons, "Ad" labels, ad-related URL patterns
-- **Audio:** Flags sustained loudness typical of ad audio
-- **Confidence:** Shown as a percentage in the dashboard banner
-- **Manual:** Press **A** to mark current video as an ad
+- **Visual signals:** looks for “Skip Ad” buttons and visible ad labels.
+- **URL patterns:** checks for known ad-related URL patterns.
+- **Audio heuristic:** flags sustained loudness that may indicate ad audio.
+- **Manual override:** press **A** to mark the current video as an ad.
 
-When an ad is detected, a red banner appears and the fly scrolls past it immediately.
-
----
-
-## Dashboard
-
-The spectator at `http://127.0.0.1:8767/` shows:
-
-- **Reel viewport** — current video playing
-- **Brain sparks** — phasic spike activity on the MaleCNS connectome (drag to orbit, scroll to zoom)
-- **Interest level** — tonic interest meter and phasic novelty
-- **Sound bands** — bass / mid / treble / onset levels
-- **Audio waveform** — live audio capture visualization
-- **Charts** — interest + novelty time series, watch outcomes, average watch time
+When an ad is detected, the spectator displays a warning banner and the system can skip the clip. These are heuristics, so detection is not guaranteed to be correct.
 
 ---
 
-## Layout
+## Project layout
 
-| Path | Role |
-|------|------|
-| `flyscroll/` | Import, preparation, simulation, visual decoder, Shorts integration, spectator |
-| `connectome_data/malecns_v1/` | MaleCNS v1.0 source feathers |
-| `outputs/flyscroll/` | Prepared `graph.npz` + manifests |
-| `reels/` | Drop your own MP4/WebM files here |
+| Path | Purpose |
+|---|---|
+| `flyscroll/` | Connectome import, graph preparation, simulation, visual decoding, Shorts integration, and spectator |
+| `connectome_data/malecns_v1/` | MaleCNS v1.0 source data |
+| `outputs/flyscroll/` | Prepared graph and manifests |
+| `reels/` | Optional local MP4/WebM videos |
 
 ---
 
-## License / attribution
+## Research notes
 
-FlyScroll code is licensed under the [MIT License](LICENSE). MaleCNS data is **CC BY 4.0**; see [NOTICE](NOTICE) for attribution.
+FlyScroll is an engineering and research experiment inspired by fruit-fly neuroscience. Its connectome-derived circuits provide the basis for modeled visual, novelty, habituation, and audio responses. The video environment and ad-detection logic are software integrations around that model.
 
-Special thanks to **ranagwho/Fruitfly-Doomscroller** — this project is based on their work, with added improvements including live audio capture, frequency-band analysis, ad detection and auto-skip, keyboard controls, an audio waveform dashboard, and keyboard shortcuts.
+A successful scroll is an observable system behavior, not by itself proof that the model has human-like attention, preference, or understanding. Interpret the dashboard signals as measurements from the implemented model.
+
+## License and attribution
+
+- FlyScroll code: [MIT License](LICENSE)
+- MaleCNS data: **CC BY 4.0**. See [NOTICE](NOTICE) for attribution.
+- Original project: [ranagwho/Fruitfly-Doomscroller](https://github.com/ranagwho/Fruitfly-Doomscroller)
+
