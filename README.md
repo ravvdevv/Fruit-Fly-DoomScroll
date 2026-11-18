@@ -1,12 +1,12 @@
 # FlyScroll
 
-A fruit-fly-inspired **doomscroller** powered by the MaleCNS connectome.
+An experimental video-scrolling system inspired by the fruit-fly MaleCNS connectome.
 
-FlyScroll models how a fruit fly's visual and auditory systems respond to changing stimuli. It watches short-form video, tracks novelty and habituation, and decides when to move on to the next clip. The project combines a research-derived neural circuit model with a practical video-watching environment.
+FlyScroll combines a connectome-inspired neural simulation with a short-form video environment. It explores how modeled visual and auditory responses, novelty signals, and habituation can influence when software advances to the next clip.
 
 ![FlyScroll watching YouTube Shorts](docs/flyscroll-demo.gif)
 
-> **In plain English:** Imagine a virtual fruit fly watching YouTube Shorts or Instagram Reels. When a clip stops being interesting, its modeled neural activity changes and FlyScroll can scroll to the next one. It is an experimental connectome-inspired system, not a claim that a biological fly literally understands videos.
+> **Research status:** This project has not demonstrated a fruit-fly connectome independently playing or completing DOOM. It is an experimental connectome-inspired video-scrolling system. Its scrolling behavior is produced by software integrations and modeled neural signals, and should not be interpreted as evidence of biological-level understanding or autonomous gameplay.
 
 FlyScroll is based on the [MaleCNS fruit fly connectome](https://blog.google/innovation-and-ai/technology/research/male-fruit-fly-brain-map/) and builds on the work of [ranagwho/Fruitfly-Doomscroller](https://github.com/ranagwho/Fruitfly-Doomscroller), with additional work on audio input, frequency-band analysis, ad detection, controls, and dashboard visualization.
 
@@ -158,9 +158,9 @@ When an ad is detected, the spectator displays a warning banner and the system c
 
 ## Research notes
 
-FlyScroll is an engineering and research experiment inspired by fruit-fly neuroscience. Its connectome-derived circuits provide the basis for modeled visual, novelty, habituation, and audio responses. The video environment and ad-detection logic are software integrations around that model.
+FlyScroll is an engineering experiment inspired by fruit-fly neuroscience. Its connectome-derived circuits provide the basis for modeled visual, novelty, habituation, and audio responses. The video environment, scrolling decisions, and ad-detection logic are software integrations around that model.
 
-A successful scroll is an observable system behavior, not by itself proof that the model has human-like attention, preference, or understanding. Interpret the dashboard signals as measurements from the implemented model.
+**DOOM benchmark status:** The project has not demonstrated a fruit-fly connectome independently controlling, playing, or completing DOOM. Do not describe it as having done so. A successful scroll is an observable software behavior, not proof of human-like attention, preference, understanding, or autonomous game-playing ability. Interpret dashboard signals as measurements from the implemented model.
 
 ## License and attribution
 
